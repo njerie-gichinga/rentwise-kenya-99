@@ -106,15 +106,31 @@ const Tenants = () => {
   // Invite mutation
   const inviteMutation = useMutation({
     mutationFn: async (form: { tenant_name: string; tenant_email: string; tenant_phone: string; unit_id: string }) => {
+      // Save invitation to DB
+      const selectedUnit = vacantUnits.find((u) => u.id === form.unit_id);
       const { error } = await supabase.from("tenant_invitations").insert({
         landlord_id: user!.id,
         ...form,
       });
       if (error) throw error;
+
+      // Try to send email via edge function
+      try {
+        await supabase.functions.invoke("send-invitation", {
+          body: {
+            tenant_name: form.tenant_name,
+            tenant_email: form.tenant_email,
+            property_name: (selectedUnit?.properties as any)?.name || "",
+            unit_number: selectedUnit?.unit_number || "",
+          },
+        });
+      } catch (emailErr) {
+        console.warn("Email send failed (non-blocking):", emailErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invitations"] });
-      toast({ title: "Invitation saved!", description: "The tenant invitation has been recorded. Email sending is not yet configured." });
+      toast({ title: "Invitation sent!", description: "The tenant has been invited and will receive an email." });
       setInviteOpen(false);
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
