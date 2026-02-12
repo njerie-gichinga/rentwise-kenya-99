@@ -34,6 +34,7 @@ const Properties = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
   const [unitDialogProperty, setUnitDialogProperty] = useState<string | null>(null);
+  const [bulkUnitProperty, setBulkUnitProperty] = useState<string | null>(null);
 
   // Edit / delete state
   const [editProperty, setEditProperty] = useState<any | null>(null);
@@ -111,6 +112,28 @@ const Properties = () => {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const bulkAddUnits = useMutation({
+    mutationFn: async (form: { property_id: string; prefix: string; start: number; end: number; rent_amount: number; status: string }) => {
+      const rows = [];
+      for (let i = form.start; i <= form.end; i++) {
+        rows.push({
+          property_id: form.property_id,
+          unit_number: `${form.prefix}${i}`,
+          rent_amount: form.rent_amount,
+          status: form.status,
+        });
+      }
+      const { error } = await supabase.from("units").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      invalidateAll();
+      toast({ title: `${vars.end - vars.start + 1} units created!` });
+      setBulkUnitProperty(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const updateUnit = useMutation({
     mutationFn: async (form: { id: string; unit_number: string; rent_amount: number; status: string }) => {
       const { id, ...rest } = form;
@@ -151,6 +174,29 @@ const Properties = () => {
       address: fd.get("address") as string,
       property_type: fd.get("property_type") as string,
       total_units: parseInt(fd.get("total_units") as string) || 1,
+    });
+  };
+
+  const handleBulkAddUnits = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const start = parseInt(fd.get("start") as string) || 1;
+    const end = parseInt(fd.get("end") as string) || 1;
+    if (end < start) {
+      toast({ title: "End number must be ≥ start number", variant: "destructive" });
+      return;
+    }
+    if (end - start + 1 > 100) {
+      toast({ title: "Maximum 100 units at once", variant: "destructive" });
+      return;
+    }
+    bulkAddUnits.mutate({
+      property_id: bulkUnitProperty!,
+      prefix: (fd.get("prefix") as string) || "",
+      start,
+      end,
+      rent_amount: parseFloat(fd.get("rent_amount") as string) || 0,
+      status: (fd.get("status") as string) || "vacant",
     });
   };
 
@@ -305,9 +351,14 @@ const Properties = () => {
                     <div className="border-t px-4 py-3">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs font-semibold text-card-foreground">Units</p>
-                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setUnitDialogProperty(p.id)}>
-                          <Plus className="mr-1 h-3 w-3" /> Add Unit
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setBulkUnitProperty(p.id)}>
+                            <Plus className="mr-1 h-3 w-3" /> Bulk Add
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setUnitDialogProperty(p.id)}>
+                            <Plus className="mr-1 h-3 w-3" /> Add Unit
+                          </Button>
+                        </div>
                       </div>
                       {propertyUnits.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No units yet.</p>
@@ -340,6 +391,47 @@ const Properties = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Add Units Dialog */}
+      <Dialog open={!!bulkUnitProperty} onOpenChange={(open) => !open && setBulkUnitProperty(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Bulk Add Units</DialogTitle>
+            <DialogDescription>Generate multiple units at once with a prefix and number range.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleBulkAddUnits} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Prefix</Label>
+              <Input name="prefix" placeholder="e.g. A-" defaultValue="" />
+              <p className="text-xs text-muted-foreground">Added before each number (e.g. A-101, A-102…)</p>
+            </div>
+            <div className="grid gap-4 grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Start Number</Label>
+                <Input name="start" type="number" min={1} defaultValue={101} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>End Number</Label>
+                <Input name="end" type="number" min={1} defaultValue={110} required />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Rent Amount (KES)</Label>
+              <Input name="rent_amount" type="number" min={0} placeholder="15000" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <select name="status" defaultValue="vacant" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <option value="vacant">Vacant</option>
+                <option value="occupied">Occupied</option>
+              </select>
+            </div>
+            <Button type="submit" className="w-full" disabled={bulkAddUnits.isPending}>
+              {bulkAddUnits.isPending ? "Creating…" : "Create Units"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Unit Dialog */}
       <Dialog open={!!unitDialogProperty} onOpenChange={(open) => !open && setUnitDialogProperty(null)}>
