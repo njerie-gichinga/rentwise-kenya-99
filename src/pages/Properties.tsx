@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Home, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { Plus, Home, ChevronDown, ChevronUp, Pencil, Trash2, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,8 @@ const Properties = () => {
   const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
   const [editUnit, setEditUnit] = useState<any | null>(null);
   const [deleteUnitId, setDeleteUnitId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all");
 
   // Fetch properties
   const { data: properties = [], isLoading } = useQuery({
@@ -301,6 +303,30 @@ const Properties = () => {
           </Dialog>
         </div>
 
+        {/* Search & Filter */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or address…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-40"
+          >
+            <option value="all">All Types</option>
+            <option value="apartment">Apartment</option>
+            <option value="bedsitter">Bedsitter</option>
+            <option value="stalls">Stalls</option>
+            <option value="house">House</option>
+          </select>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading properties…</p>
         ) : properties.length === 0 ? (
@@ -308,9 +334,21 @@ const Properties = () => {
             <Home className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm text-muted-foreground">No properties yet. Add your first property to get started.</p>
           </div>
-        ) : (
+        ) : (() => {
+          const filtered = properties.filter((p) => {
+            const q = searchQuery.toLowerCase();
+            const matchesSearch = !q || p.name.toLowerCase().includes(q) || (p.address || "").toLowerCase().includes(q);
+            const matchesType = filterType === "all" || p.property_type === filterType;
+            return matchesSearch && matchesType;
+          });
+          return filtered.length === 0 ? (
+            <div className="rounded-xl border bg-card p-8 text-center shadow-card">
+              <Search className="mx-auto h-10 w-10 text-muted-foreground/50" />
+              <p className="mt-3 text-sm text-muted-foreground">No properties match your search.</p>
+            </div>
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {properties.map((p) => {
+            {filtered.map((p) => {
               const propertyUnits = units.filter((u) => u.property_id === p.id);
               const occupied = propertyUnits.filter((u) => u.status === "occupied").length;
               const total = propertyUnits.length;
@@ -389,7 +427,8 @@ const Properties = () => {
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Bulk Add Units Dialog */}
