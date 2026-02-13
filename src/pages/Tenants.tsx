@@ -3,7 +3,17 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Search, Phone, Home } from "lucide-react";
+import { UserPlus, Search, Phone, Home, Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +33,8 @@ const Tenants = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editTenant, setEditTenant] = useState<{ unitId: string; tenantId: string; name: string; phone: string } | null>(null);
+  const [removeTenant, setRemoveTenant] = useState<{ unitId: string; name: string } | null>(null);
 
   // Fetch vacant units belonging to current landlord
   const { data: vacantUnits = [] } = useQuery({
@@ -88,6 +100,7 @@ const Tenants = () => {
     const profile = tenantProfiles.find((p) => p.user_id === u.tenant_id);
     return {
       id: u.id,
+      tenantId: u.tenant_id || "",
       name: profile?.full_name || "Unknown",
       phone: profile?.phone || "",
       unit: u.unit_number,
@@ -103,18 +116,50 @@ const Tenants = () => {
       t.unit.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Edit tenant mutation
+  const editMutation = useMutation({
+    mutationFn: async (form: { tenantId: string; name: string; phone: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: form.name, phone: form.phone })
+        .eq("user_id", form.tenantId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenant-profiles"] });
+      toast({ title: "Tenant updated" });
+      setEditTenant(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  // Remove tenant from unit mutation
+  const removeMutation = useMutation({
+    mutationFn: async (unitId: string) => {
+      const { error } = await supabase
+        .from("units")
+        .update({ tenant_id: null, status: "vacant" })
+        .eq("id", unitId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["occupied-units"] });
+      queryClient.invalidateQueries({ queryKey: ["vacant-units"] });
+      toast({ title: "Tenant removed from unit" });
+      setRemoveTenant(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   // Invite mutation
   const inviteMutation = useMutation({
     mutationFn: async (form: { tenant_name: string; tenant_email: string; tenant_phone: string; unit_id: string }) => {
-      // Save invitation to DB
       const selectedUnit = vacantUnits.find((u) => u.id === form.unit_id);
       const { error } = await supabase.from("tenant_invitations").insert({
         landlord_id: user!.id,
         ...form,
       });
       if (error) throw error;
-
-      // Try to send email via edge function
       try {
         await supabase.functions.invoke("send-invitation", {
           body: {
@@ -248,18 +293,67 @@ const Tenants = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 sm:text-right">
-                  <div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
                     <p className="text-sm font-semibold text-card-foreground">{t.rent}</p>
                     <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                       {t.status}
                     </span>
                   </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditTenant({ unitId: t.id, tenantId: t.tenantId, name: t.name, phone: t.phone })}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setRemoveTenant({ unitId: t.id, name: t.name })}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Edit Tenant Dialog */}
+        <Dialog open={!!editTenant} onOpenChange={(o) => !o && setEditTenant(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display">Edit Tenant</DialogTitle>
+              <DialogDescription>Update tenant contact details.</DialogDescription>
+            </DialogHeader>
+            {editTenant && (
+              <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); editMutation.mutate({ tenantId: editTenant.tenantId, name: fd.get("name") as string, phone: fd.get("phone") as string }); }} className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label>Full name</Label>
+                  <Input name="name" defaultValue={editTenant.name} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone</Label>
+                  <Input name="phone" type="tel" defaultValue={editTenant.phone} />
+                </div>
+                <Button type="submit" className="w-full" disabled={editMutation.isPending}>
+                  {editMutation.isPending ? "Saving…" : "Save Changes"}
+                </Button>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Remove Tenant Confirmation */}
+        <AlertDialog open={!!removeTenant} onOpenChange={(o) => !o && setRemoveTenant(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove tenant?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove <strong>{removeTenant?.name}</strong> from their unit and mark it as vacant. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => removeTenant && removeMutation.mutate(removeTenant.unitId)}>
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
