@@ -15,6 +15,7 @@ import Payments from "./pages/Payments";
 import Maintenance from "./pages/Maintenance";
 import TenantPortal from "./pages/TenantPortal";
 import NotFound from "./pages/NotFound";
+import AcceptInvitation from "./pages/AcceptInvitation";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/accept-invitation" element={<AcceptInvitation />} />
             <Route path="/dashboard" element={<ProtectedRoute allowedRole="landlord"><Dashboard /></ProtectedRoute>} />
             <Route path="/properties" element={<ProtectedRoute allowedRole="landlord"><Properties /></ProtectedRoute>} />
             <Route path="/tenants" element={<ProtectedRoute allowedRole="landlord"><Tenants /></ProtectedRoute>} />

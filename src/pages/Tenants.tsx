@@ -155,10 +155,10 @@ const Tenants = () => {
   const inviteMutation = useMutation({
     mutationFn: async (form: { tenant_name: string; tenant_email: string; tenant_phone: string; unit_id: string }) => {
       const selectedUnit = vacantUnits.find((u) => u.id === form.unit_id);
-      const { error } = await supabase.from("tenant_invitations").insert({
+      const { data, error } = await supabase.from("tenant_invitations").insert({
         landlord_id: user!.id,
         ...form,
-      });
+      }).select("id").single();
       if (error) throw error;
       try {
         await supabase.functions.invoke("send-invitation", {
@@ -167,6 +167,8 @@ const Tenants = () => {
             tenant_email: form.tenant_email,
             property_name: (selectedUnit?.properties as any)?.name || "",
             unit_number: selectedUnit?.unit_number || "",
+            invitation_id: data.id,
+            app_url: window.location.origin,
           },
         });
       } catch (emailErr) {

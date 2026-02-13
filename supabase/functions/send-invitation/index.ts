@@ -16,22 +16,16 @@ serve(async (req) => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const { tenant_name, tenant_email, property_name, unit_number, invitation_id, app_url } = await req.json();
 
-    const { tenant_name, tenant_email, property_name, unit_number } = await req.json();
-
-    if (!tenant_email || !tenant_name) {
-      return new Response(JSON.stringify({ error: "Missing tenant_name or tenant_email" }), {
+    if (!tenant_email || !tenant_name || !invitation_id) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Build signup link for the tenant
-    const signupUrl = `${SUPABASE_URL.replace("supabase.co", "lovable.app").replace("https://", "https://id-preview--").split(".supabase.co")[0]}`; 
-    // We'll use a simple approach: direct tenant to the app's signup page
-    const appUrl = Deno.env.get("APP_URL") || SUPABASE_URL;
-    const signupLink = `${appUrl}/signup?email=${encodeURIComponent(tenant_email)}`;
+    const acceptLink = `${app_url}/accept-invitation?id=${invitation_id}&email=${encodeURIComponent(tenant_email)}&name=${encodeURIComponent(tenant_name)}`;
 
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
@@ -41,12 +35,12 @@ serve(async (req) => {
         <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 16px 0;">
           <p style="margin: 0;"><strong>${property_name}</strong> — Unit ${unit_number}</p>
         </div>
-        <p>Click the button below to create your account:</p>
-        <a href="${signupLink}" style="display: inline-block; background: #16a34a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-          Set Up My Account
+        <p>Click the button below to accept and set up your account:</p>
+        <a href="${acceptLink}" style="display: inline-block; background: #16a34a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+          Accept Invitation
         </a>
         <p style="color: #666; font-size: 13px; margin-top: 24px;">
-          If the button doesn't work, copy and paste this link: ${signupLink}
+          If the button doesn't work, copy and paste this link: ${acceptLink}
         </p>
       </div>
     `;

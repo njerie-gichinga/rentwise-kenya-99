@@ -1,4 +1,5 @@
-import { Building2, CreditCard, Home, Wrench, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Building2, CreditCard, Home, Wrench, LogOut, PartyPopper } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatsCard from "@/components/StatsCard";
@@ -11,6 +12,15 @@ const TenantPortal = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [welcomeData, setWelcomeData] = useState<{ unit_number: string; property_name: string; rent_amount: number } | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("rentwise_welcome");
+    if (stored) {
+      setWelcomeData(JSON.parse(stored));
+      localStorage.removeItem("rentwise_welcome");
+    }
+  }, []);
 
   // Fetch assigned unit
   const { data: unit, isLoading } = useQuery({
@@ -79,6 +89,16 @@ const TenantPortal = () => {
       </div>
 
       <div className="container max-w-2xl space-y-6 py-6">
+        {/* Welcome banner */}
+        {welcomeData && (
+          <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <PartyPopper className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="text-sm font-semibold text-card-foreground">Welcome! You have been assigned to Unit {welcomeData.unit_number} at {welcomeData.property_name}.</p>
+              <p className="text-sm text-muted-foreground">Rent due: KSh {welcomeData.rent_amount.toLocaleString()}</p>
+            </div>
+          </div>
+        )}
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading your unit…</p>
         ) : !unit ? (
