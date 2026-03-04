@@ -1,18 +1,28 @@
 import { useState, useEffect } from "react";
-import { Building2, CreditCard, Home, Wrench, LogOut, ArrowLeftRight, PartyPopper } from "lucide-react";
+import { Building2, CreditCard, Home, Wrench, LogOut, ArrowLeftRight, PartyPopper, Plus, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatsCard from "@/components/StatsCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 const TenantPortal = () => {
   const { user, roles, switchRole, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [welcomeData, setWelcomeData] = useState<{ unit_number: string; property_name: string; rent_amount: number } | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [reqTitle, setReqTitle] = useState("");
+  const [reqDesc, setReqDesc] = useState("");
+  const [reqPriority, setReqPriority] = useState("medium");
 
   useEffect(() => {
     const stored = localStorage.getItem("rentwise_welcome");
@@ -53,6 +63,43 @@ const TenantPortal = () => {
     enabled: !!user,
   });
 
+  // Fetch maintenance requests
+  const { data: maintenanceRequests = [] } = useQuery({
+    queryKey: ["tenant-maintenance", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maintenance_requests")
+        .select("*")
+        .eq("tenant_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const createRequestMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("maintenance_requests").insert({
+        unit_id: unit!.id,
+        tenant_id: user!.id,
+        title: reqTitle.trim(),
+        description: reqDesc.trim() || null,
+        priority: reqPriority,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenant-maintenance"] });
+      setRequestOpen(false);
+      setReqTitle("");
+      setReqDesc("");
+      setReqPriority("medium");
+      toast({ title: "Request submitted", description: "Your landlord will be notified." });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/login", { replace: true });
@@ -64,6 +111,12 @@ const TenantPortal = () => {
 
   const lastPayment = payments[0];
   const rentDue = unit ? `KES ${unit.rent_amount.toLocaleString()}` : "—";
+
+  const statusIcon = (s: string) => {
+    if (s === "completed") return <CheckCircle2 className="h-4 w-4 text-primary" />;
+    if (s === "in_progress") return <Clock className="h-4 w-4 text-amber-500" />;
+    return <AlertTriangle className="h-4 w-4 text-destructive" />;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -146,10 +199,43 @@ const TenantPortal = () => {
                 <CreditCard className="h-5 w-5" />
                 <span className="text-sm font-medium">Pay Rent</span>
               </Button>
-              <Button variant="outline" className="h-auto flex-col gap-1.5 py-4" size="lg">
-                <Wrench className="h-5 w-5" />
-                <span className="text-sm font-medium">Request Repair</span>
-              </Button>
+              <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-auto flex-col gap-1.5 py-4" size="lg" disabled={!unit}>
+                    <Wrench className="h-5 w-5" />
+                    <span className="text-sm font-medium">Request Repair</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Submit Repair Request</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="req-title">What needs fixing?</Label>
+                      <Input id="req-title" placeholder="e.g. Leaking kitchen tap" value={reqTitle} onChange={(e) => setReqTitle(e.target.value)} maxLength={200} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="req-desc">Details (optional)</Label>
+                      <Textarea id="req-desc" placeholder="Describe the issue…" value={reqDesc} onChange={(e) => setReqDesc(e.target.value)} maxLength={1000} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Priority</Label>
+                      <Select value={reqPriority} onValueChange={setReqPriority}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full" disabled={!reqTitle.trim() || createRequestMutation.isPending} onClick={() => createRequestMutation.mutate()}>
+                      {createRequestMutation.isPending ? "Submitting…" : "Submit Request"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Payment history */}
@@ -180,6 +266,36 @@ const TenantPortal = () => {
                           {p.status}
                         </span>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Maintenance requests */}
+            <div className="rounded-xl border bg-card shadow-card">
+              <div className="border-b px-4 py-3">
+                <h2 className="font-display text-sm font-semibold text-card-foreground">Repair Requests</h2>
+              </div>
+              {maintenanceRequests.length === 0 ? (
+                <div className="px-4 py-6 text-center">
+                  <p className="text-sm text-muted-foreground">No repair requests yet.</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {maintenanceRequests.map((r) => (
+                    <div key={r.id} className="flex items-start gap-3 px-4 py-3">
+                      <div className="mt-0.5">{statusIcon(r.status)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-card-foreground">{r.title}</p>
+                        {r.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{r.description}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(r.created_at).toLocaleDateString("en-KE", { month: "short", day: "numeric" })} · {r.priority} priority
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
+                        {r.status.replace("_", " ")}
+                      </span>
                     </div>
                   ))}
                 </div>
