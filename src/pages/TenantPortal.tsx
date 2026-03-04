@@ -88,6 +88,17 @@ const TenantPortal = () => {
         priority: reqPriority,
       });
       if (error) throw error;
+
+      // Notify landlord via email (fire-and-forget)
+      supabase.functions.invoke("notify-maintenance", {
+        body: {
+          unit_id: unit!.id,
+          title: reqTitle.trim(),
+          description: reqDesc.trim() || null,
+          priority: reqPriority,
+          tenant_name: user!.user_metadata?.full_name || user!.email,
+        },
+      }).catch((err) => console.error("Notification failed:", err));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenant-maintenance"] });
