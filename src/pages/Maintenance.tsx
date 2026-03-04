@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Wrench, Plus, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Wrench, Plus, CheckCircle2, Clock, AlertTriangle, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -40,6 +40,12 @@ const Maintenance = () => {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [unitId, setUnitId] = useState("");
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   // Fetch units for this landlord (to assign requests)
   const { data: units = [] } = useQuery({
@@ -112,6 +118,31 @@ const Maintenance = () => {
     },
   });
 
+  // Filtered & sorted requests
+  const filteredRequests = useMemo(() => {
+    let result = [...requests];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((r: any) =>
+        r.title.toLowerCase().includes(q) ||
+        r.description?.toLowerCase().includes(q) ||
+        (r.units as any)?.unit_number?.toLowerCase().includes(q) ||
+        (r.units as any)?.properties?.name?.toLowerCase().includes(q)
+      );
+    }
+    if (filterStatus !== "all") result = result.filter((r: any) => r.status === filterStatus);
+    if (filterPriority !== "all") result = result.filter((r: any) => r.priority === filterPriority);
+    result.sort((a: any, b: any) => {
+      if (sortBy === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      const pOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+      return (pOrder[a.priority] ?? 1) - (pOrder[b.priority] ?? 1);
+    });
+    return result;
+  }, [requests, searchQuery, filterStatus, filterPriority, sortBy]);
+
+  const activeFilterCount = [filterStatus !== "all", filterPriority !== "all", searchQuery !== ""].filter(Boolean).length;
+
   return (
     <DashboardLayout>
       <div className="space-y-5">
@@ -182,16 +213,68 @@ const Maintenance = () => {
           </Dialog>
         </div>
 
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search requests…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="priority">Priority</SelectItem>
+            </SelectContent>
+          </Select>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterPriority("all"); setSortBy("newest"); }}>
+              Clear filters
+            </Button>
+          )}
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading requests…</p>
-        ) : requests.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <div className="rounded-xl border bg-card p-8 text-center shadow-card">
             <Wrench className="mx-auto h-10 w-10 text-muted-foreground/50" />
-            <p className="mt-3 text-sm text-muted-foreground">No maintenance requests yet.</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {requests.length === 0 ? "No maintenance requests yet." : "No requests match your filters."}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {requests.map((r: any) => (
+            {filteredRequests.map((r: any) => (
               <div key={r.id} className="rounded-xl border bg-card p-4 shadow-card">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
