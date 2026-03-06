@@ -1,11 +1,12 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { Search, X, Plus } from "lucide-react";
+import { Search, X, Plus, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useMemo } from "react";
+import PaymentReceipt, { type ReceiptData } from "@/components/PaymentReceipt";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
