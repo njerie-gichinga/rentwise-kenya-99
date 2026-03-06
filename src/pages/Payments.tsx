@@ -19,7 +19,8 @@ const Payments = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterMethod, setFilterMethod] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
-
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState<ReceiptData | null>(null);
   // Record payment dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("");
