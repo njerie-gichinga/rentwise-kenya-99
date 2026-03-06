@@ -1,19 +1,44 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { Search, X } from "lucide-react";
+import { Search, X, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 const Payments = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterMethod, setFilterMethod] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+
+  // Record payment dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState("");
+  const [payAmount, setPayAmount] = useState("");
+  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payStatus, setPayStatus] = useState("completed");
+
+  // Fetch units with tenants for the payment form
+  const { data: allUnits = [] } = useQuery({
+    queryKey: ["landlord-units-for-payment", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("units")
+        .select("id, unit_number, tenant_id, rent_amount, properties!inner(name)")
+        .order("unit_number", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ["payments", user?.id],
@@ -58,7 +83,6 @@ const Payments = () => {
 
   const filtered = useMemo(() => {
     let result = [...enriched];
-
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -69,23 +93,11 @@ const Payments = () => {
           p.property_name.toLowerCase().includes(q)
       );
     }
-
-    if (filterStatus !== "all") {
-      result = result.filter((p) => p.status === filterStatus);
-    }
-
-    if (filterMethod !== "all") {
-      result = result.filter((p) => p.method === filterMethod);
-    }
-
-    if (sortBy === "oldest") {
-      result.sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
-    } else if (sortBy === "amount_high") {
-      result.sort((a, b) => b.amount - a.amount);
-    } else if (sortBy === "amount_low") {
-      result.sort((a, b) => a.amount - b.amount);
-    }
-
+    if (filterStatus !== "all") result = result.filter((p) => p.status === filterStatus);
+    if (filterMethod !== "all") result = result.filter((p) => p.method === filterMethod);
+    if (sortBy === "oldest") result.sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
+    else if (sortBy === "amount_high") result.sort((a, b) => b.amount - a.amount);
+    else if (sortBy === "amount_low") result.sort((a, b) => a.amount - b.amount);
     return result;
   }, [enriched, search, filterStatus, filterMethod, sortBy]);
 
@@ -96,12 +108,121 @@ const Payments = () => {
     setSortBy("newest");
   };
 
+  const recordPayment = useMutation({
+    mutationFn: async () => {
+      const unit = allUnits.find((u) => u.id === selectedUnit);
+      if (!unit) throw new Error("Select a unit");
+      const amount = parseFloat(payAmount);
+      if (!amount || amount <= 0) throw new Error("Enter a valid amount");
+
+      const { error } = await supabase.from("payments").insert({
+        unit_id: unit.id,
+        tenant_id: unit.tenant_id || null,
+        amount,
+        payment_date: payDate,
+        status: payStatus,
+        mpesa_ref: null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Payment recorded", description: "Cash payment saved successfully." });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setDialogOpen(false);
+      setSelectedUnit("");
+      setPayAmount("");
+      setPayDate(new Date().toISOString().slice(0, 10));
+      setPayStatus("completed");
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Payments</h1>
-          <p className="text-sm text-muted-foreground">Track M-Pesa and cash payments</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">Payments</h1>
+            <p className="text-sm text-muted-foreground">Track M-Pesa and cash payments</p>
+          </div>
+
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="h-4 w-4" /> Record Payment
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Record Cash Payment</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  recordPayment.mutate();
+                }}
+                className="space-y-4 pt-2"
+              >
+                <div className="space-y-2">
+                  <Label>Unit</Label>
+                  <Select value={selectedUnit} onValueChange={(v) => {
+                    setSelectedUnit(v);
+                    const unit = allUnits.find((u) => u.id === v);
+                    if (unit) setPayAmount(String(unit.rent_amount));
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select a unit" /></SelectTrigger>
+                    <SelectContent>
+                      {allUnits.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {(u.properties as any)?.name} — {u.unit_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Amount (KES)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    placeholder="e.g. 15000"
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Payment Date</Label>
+                  <Input
+                    type="date"
+                    value={payDate}
+                    onChange={(e) => setPayDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={payStatus} onValueChange={setPayStatus}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={!selectedUnit || !payAmount || recordPayment.isPending}>
+                  {recordPayment.isPending ? "Saving…" : "Save Payment"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Filters */}
@@ -110,7 +231,6 @@ const Payments = () => {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search tenant, unit, ref…" className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
@@ -119,7 +239,6 @@ const Payments = () => {
               <SelectItem value="pending">Pending</SelectItem>
             </SelectContent>
           </Select>
-
           <Select value={filterMethod} onValueChange={setFilterMethod}>
             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Method" /></SelectTrigger>
             <SelectContent>
@@ -128,7 +247,6 @@ const Payments = () => {
               <SelectItem value="Cash">Cash</SelectItem>
             </SelectContent>
           </Select>
-
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Sort" /></SelectTrigger>
             <SelectContent>
@@ -138,7 +256,6 @@ const Payments = () => {
               <SelectItem value="amount_low">Amount ↑</SelectItem>
             </SelectContent>
           </Select>
-
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
               <X className="h-3.5 w-3.5" /> Clear
@@ -156,7 +273,6 @@ const Payments = () => {
           </div>
         ) : (
           <div className="rounded-xl border bg-card shadow-card overflow-hidden">
-            {/* Desktop table */}
             <div className="hidden sm:block">
               <table className="w-full text-sm">
                 <thead>
@@ -187,8 +303,6 @@ const Payments = () => {
                 </tbody>
               </table>
             </div>
-
-            {/* Mobile cards */}
             <div className="divide-y sm:hidden">
               {filtered.map((p) => (
                 <div key={p.id} className="flex items-center justify-between px-4 py-3">
