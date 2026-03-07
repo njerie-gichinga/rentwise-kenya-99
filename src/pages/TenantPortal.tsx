@@ -366,6 +366,9 @@ const TenantPortal = () => {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-card-foreground">{r.title}</p>
                         {r.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{r.description}</p>}
+                        {r.image_url && (
+                          <img src={r.image_url} alt="Issue photo" className="mt-2 rounded-lg border max-h-32 object-cover" />
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {new Date(r.created_at).toLocaleDateString("en-KE", { month: "short", day: "numeric" })} · {r.priority} priority
                         </p>

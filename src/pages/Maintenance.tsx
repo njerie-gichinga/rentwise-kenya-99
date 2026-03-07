@@ -286,6 +286,9 @@ const Maintenance = () => {
                       {r.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.description}</p>
                       )}
+                      {r.image_url && (
+                        <img src={r.image_url} alt="Issue photo" className="mt-2 rounded-lg border max-h-32 object-cover" />
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {(r.units as any)?.properties?.name} · Unit {(r.units as any)?.unit_number} · {new Date(r.created_at).toLocaleDateString("en-KE", { month: "short", day: "numeric" })}
                       </p>
