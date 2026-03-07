@@ -104,21 +104,39 @@ const AcceptInvitation = () => {
     e.preventDefault();
     setSignupLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/accept-invitation?id=${invitationId}`,
-          data: { full_name: name, phone, role: "tenant" },
+      const { data, error } = await supabase.functions.invoke("signup-and-accept", {
+        body: {
+          invitation_id: invitationId,
+          email,
+          password,
+          full_name: name,
+          phone,
         },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Failed to create account");
+      if (data?.error) throw new Error(data.error);
 
-      toast({
-        title: "Check your email",
-        description: "We sent a verification link. After confirming, come back to accept your invitation.",
-      });
+      if (data?.session) {
+        // Set the session so the user is logged in
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+
+        setAcceptedData({
+          unit_number: data.unit_number,
+          property_name: data.property_name,
+          rent_amount: data.rent_amount,
+        });
+        setStatus("accepted");
+
+        localStorage.setItem("rentwise_welcome", JSON.stringify(data));
+        toast({ title: "Welcome!", description: `You've been assigned to Unit ${data.unit_number}` });
+      } else if (data?.needs_login) {
+        toast({ title: "Account created!", description: "Please sign in to continue." });
+        navigate(`/login?redirect=/accept-invitation?id=${invitationId}`);
+      }
     } catch (err: any) {
       toast({ title: "Sign up failed", description: err.message, variant: "destructive" });
     } finally {
