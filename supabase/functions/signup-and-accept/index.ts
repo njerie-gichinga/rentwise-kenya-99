@@ -54,7 +54,8 @@ serve(async (req) => {
       });
     }
 
-    // 2. Create user (auto-confirmed) via admin API
+    // 2. Create user or sign in existing user
+    let userId: string;
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -63,17 +64,23 @@ serve(async (req) => {
     });
 
     if (createError) {
-      // If user already exists, return a helpful message
       if (createError.message?.includes("already been registered")) {
-        return new Response(JSON.stringify({ error: "An account with this email already exists. Please sign in instead." }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // User exists — try to sign them in with the provided password
+        const tempClient = createClient(supabaseUrl, anonKey);
+        const { data: signIn, error: signErr } = await tempClient.auth.signInWithPassword({ email, password });
+        if (signErr) {
+          return new Response(JSON.stringify({ error: "An account with this email already exists. Please sign in with your existing password." }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        userId = signIn.user.id;
+      } else {
+        throw createError;
       }
-      throw createError;
+    } else {
+      userId = newUser.user.id;
     }
-
-    const userId = newUser.user.id;
 
     // 3. Accept invitation: update status, assign unit, ensure role
     await adminClient
