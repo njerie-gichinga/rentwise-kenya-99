@@ -369,7 +369,24 @@ const Tenants = () => {
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setRemoveTenant({ unitId: t.id, name: t.name })}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
-                </div>
+        {/* Recall Invitation Confirmation */}
+        <AlertDialog open={!!recallInvitation} onOpenChange={(o) => !o && setRecallInvitation(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Recall invitation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will cancel the invitation for <strong>{recallInvitation?.name}</strong>. They will no longer be able to accept it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => recallInvitation && recallMutation.mutate(recallInvitation.id)}>
+                Recall
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
               </div>
             ))}
           </div>
