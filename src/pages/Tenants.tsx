@@ -35,6 +35,7 @@ const Tenants = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editTenant, setEditTenant] = useState<{ unitId: string; tenantId: string; name: string; phone: string } | null>(null);
   const [removeTenant, setRemoveTenant] = useState<{ unitId: string; name: string } | null>(null);
+  const [recallInvitation, setRecallInvitation] = useState<{ id: string; name: string } | null>(null);
 
   // Fetch vacant units belonging to current landlord
   const { data: vacantUnits = [] } = useQuery({
@@ -306,7 +307,28 @@ const Tenants = () => {
                     <p className="text-sm font-medium text-card-foreground">{inv.tenant_name}</p>
                     <p className="text-xs text-muted-foreground">{inv.tenant_email} · {(inv.units as any)?.properties?.name} – {(inv.units as any)?.unit_number}</p>
                   </div>
-                  <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning">pending</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={resendMutation.isPending}
+                      onClick={() => resendMutation.mutate(inv)}
+                    >
+                      <RotateCw className="h-3 w-3" />
+                      Resend
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs text-destructive hover:text-destructive"
+                      onClick={() => setRecallInvitation({ id: inv.id, name: inv.tenant_name })}
+                    >
+                      <XCircle className="h-3 w-3" />
+                      Recall
+                    </Button>
+                    <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning">pending</span>
+                  </div>
                 </div>
               ))}
             </div>
