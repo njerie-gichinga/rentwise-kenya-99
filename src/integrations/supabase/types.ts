@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           priority: string
           status: string
           tenant_id: string | null
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           priority?: string
           status?: string
           tenant_id?: string | null
@@ -41,6 +43,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           priority?: string
           status?: string
           tenant_id?: string | null

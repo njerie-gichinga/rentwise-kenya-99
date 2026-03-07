@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Building2, CreditCard, Home, Wrench, LogOut, ArrowLeftRight, PartyPopper, Plus, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Building2, CreditCard, Home, Wrench, LogOut, ArrowLeftRight, PartyPopper, Plus, Clock, CheckCircle2, AlertTriangle, ImagePlus, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -23,6 +23,9 @@ const TenantPortal = () => {
   const [reqTitle, setReqTitle] = useState("");
   const [reqDesc, setReqDesc] = useState("");
   const [reqPriority, setReqPriority] = useState("medium");
+  const [reqImage, setReqImage] = useState<File | null>(null);
+  const [reqImagePreview, setReqImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("rentwise_welcome");
@@ -78,14 +81,47 @@ const TenantPortal = () => {
     enabled: !!user,
   });
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max 5MB allowed.", variant: "destructive" });
+      return;
+    }
+    setReqImage(file);
+    setReqImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setReqImage(null);
+    setReqImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const createRequestMutation = useMutation({
     mutationFn: async () => {
+      let imageUrl: string | null = null;
+
+      if (reqImage) {
+        const ext = reqImage.name.split(".").pop();
+        const path = `${user!.id}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("maintenance-images")
+          .upload(path, reqImage);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from("maintenance-images")
+          .getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase.from("maintenance_requests").insert({
         unit_id: unit!.id,
         tenant_id: user!.id,
         title: reqTitle.trim(),
         description: reqDesc.trim() || null,
         priority: reqPriority,
+        image_url: imageUrl,
       });
       if (error) throw error;
 
@@ -106,6 +142,7 @@ const TenantPortal = () => {
       setReqTitle("");
       setReqDesc("");
       setReqPriority("medium");
+      clearImage();
       toast({ title: "Request submitted", description: "Your landlord will be notified." });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
