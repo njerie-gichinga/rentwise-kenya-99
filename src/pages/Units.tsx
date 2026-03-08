@@ -153,6 +153,9 @@ const Units = () => {
 
   const occupiedCount = units.filter((u) => u.status === "occupied").length;
   const vacantCount = units.filter((u) => u.status === "vacant").length;
+  const occupancyRate = units.length > 0 ? Math.round((occupiedCount / units.length) * 100) : 0;
+  const totalRent = units.reduce((sum, u) => sum + Number(u.rent_amount), 0);
+  const collectedRent = units.filter((u) => u.status === "occupied").reduce((sum, u) => sum + Number(u.rent_amount), 0);
 
   return (
     <DashboardLayout>
@@ -160,9 +163,33 @@ const Units = () => {
         {/* Header */}
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Units</h1>
-          <p className="text-sm text-muted-foreground">
-            {units.length} total · {occupiedCount} occupied · {vacantCount} vacant
-          </p>
+          <p className="text-sm text-muted-foreground">Manage all your rental units</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border bg-card p-4 shadow-card">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Units</p>
+            <p className="mt-1 font-display text-2xl font-bold text-card-foreground">{units.length}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{occupiedCount} occupied · {vacantCount} vacant</p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-card">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Occupancy</p>
+            <p className="mt-1 font-display text-2xl font-bold text-card-foreground">{occupancyRate}%</p>
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
+              <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${occupancyRate}%` }} />
+            </div>
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-card">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Expected Rent</p>
+            <p className="mt-1 font-display text-2xl font-bold text-card-foreground">KES {collectedRent.toLocaleString()}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">from occupied units</p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 shadow-card">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Portfolio Value</p>
+            <p className="mt-1 font-display text-2xl font-bold text-card-foreground">KES {totalRent.toLocaleString()}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">total rent capacity</p>
+          </div>
         </div>
 
         {/* Search & Filters */}
