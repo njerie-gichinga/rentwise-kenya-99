@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import NotificationBell from "@/components/NotificationBell";
+import InstallBanner from "@/components/InstallBanner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             <NotificationBell />
           </header>
+          <InstallBanner />
           <main className="flex-1 p-4 md:p-6">{children}</main>
         </div>
       </div>

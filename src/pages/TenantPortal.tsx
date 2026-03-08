@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Building2, CreditCard, Home, Wrench, LogOut, ArrowLeftRight, PartyPopper, Plus, Clock, CheckCircle2, AlertTriangle, ImagePlus, X } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import InstallBanner from "@/components/InstallBanner";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -218,10 +219,7 @@ const TenantPortal = () => {
         </div>
       </header>
 
-      {/* Install banner */}
-      <div className="border-b bg-primary/5 px-4 py-2.5 text-center text-sm text-primary">
-        📱 <strong>Add to Home Screen</strong> for quick access — tap <em>Share → Add to Home Screen</em>
-      </div>
+      <InstallBanner />
 
       <div className="container max-w-2xl space-y-6 py-6">
         {/* Welcome banner */}
