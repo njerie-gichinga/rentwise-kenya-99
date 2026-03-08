@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.mpesa-callback]
 verify_jwt = false
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.rent-reminder]
+verify_jwt = false
