@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Building2, CreditCard, Home, Wrench, LogOut, ArrowLeftRight, PartyPopper, Plus, Clock, CheckCircle2, AlertTriangle, ImagePlus, X } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
