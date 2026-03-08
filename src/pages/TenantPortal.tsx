@@ -219,10 +219,7 @@ const TenantPortal = () => {
         </div>
       </header>
 
-      {/* Install banner */}
-      <div className="border-b bg-primary/5 px-4 py-2.5 text-center text-sm text-primary">
-        📱 <strong>Add to Home Screen</strong> for quick access — tap <em>Share → Add to Home Screen</em>
-      </div>
+      <InstallBanner />
 
       <div className="container max-w-2xl space-y-6 py-6">
         {/* Welcome banner */}
