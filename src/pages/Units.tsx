@@ -186,7 +186,7 @@ const Units = () => {
             <p className="mt-0.5 text-xs text-muted-foreground">from occupied units</p>
           </div>
           <div className="rounded-xl border bg-card p-4 shadow-card">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Portfolio Value</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Value</p>
             <p className="mt-1 font-display text-2xl font-bold text-card-foreground">KES {totalRent.toLocaleString()}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">total rent capacity</p>
           </div>
