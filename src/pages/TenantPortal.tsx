@@ -267,10 +267,44 @@ const TenantPortal = () => {
 
             {/* Quick Actions */}
             <div className="grid gap-3 grid-cols-2">
-              <Button className="h-auto flex-col gap-1.5 py-4" size="lg" onClick={handlePayRent}>
-                <CreditCard className="h-5 w-5" />
-                <span className="text-sm font-medium">Pay Rent</span>
-              </Button>
+              <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-auto flex-col gap-1.5 py-4" size="lg">
+                    <CreditCard className="h-5 w-5" />
+                    <span className="text-sm font-medium">Pay Rent</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Pay Rent via M-Pesa</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border bg-muted/50 p-3 text-center">
+                      <p className="text-xs text-muted-foreground">Amount</p>
+                      <p className="text-2xl font-bold text-foreground">KES {unit?.rent_amount.toLocaleString()}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pay-phone">M-Pesa Phone Number</Label>
+                      <Input
+                        id="pay-phone"
+                        type="tel"
+                        placeholder="0712345678"
+                        value={payPhone}
+                        onChange={(e) => setPayPhone(e.target.value)}
+                        maxLength={13}
+                      />
+                      <p className="text-xs text-muted-foreground">You'll receive an STK push prompt on this number</p>
+                    </div>
+                    <Button
+                      className="w-full"
+                      disabled={!payPhone.trim() || payingRent}
+                      onClick={handlePayRent}
+                    >
+                      {payingRent ? "Sending prompt…" : "Pay Now"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="h-auto flex-col gap-1.5 py-4" size="lg" disabled={!unit}>
