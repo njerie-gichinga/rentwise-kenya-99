@@ -35,8 +35,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "RentWise Kenya",
-        short_name: "RentWise",
+        name: "RentEase Kenya",
+        short_name: "RentEase",
         description: "Mobile rental management with M-Pesa. Built for Kenyan landlords & tenants.",
         theme_color: "#2d6a4f",
         background_color: "#f8faf5",

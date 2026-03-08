@@ -57,12 +57,12 @@ const Install = () => {
 
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-bold text-foreground">
-            {isInstalled ? "Already Installed!" : "Install RentWise"}
+            {isInstalled ? "Already Installed!" : "Install RentEase"}
           </h1>
           <p className="text-muted-foreground text-sm">
             {isInstalled
-              ? "RentWise is already on your home screen. Open it from there for the best experience."
-              : "Add RentWise to your home screen for quick access, offline support, and a native app experience."}
+              ? "RentEase is already on your home screen. Open it from there for the best experience."
+              : "Add RentEase to your home screen for quick access, offline support, and a native app experience."}
           </p>
         </div>
 

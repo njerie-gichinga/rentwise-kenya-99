@@ -51,7 +51,7 @@ export function AppSidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
           <Building2 className="h-4 w-4 text-sidebar-primary-foreground" />
         </div>
-        <span className="font-display text-base font-bold text-sidebar-foreground">RentWise</span>
+        <span className="font-display text-base font-bold text-sidebar-foreground">RentEase</span>
       </div>
 
       <SidebarContent className="px-2 pt-2">

@@ -23,7 +23,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
                   <Building2 className="h-3.5 w-3.5 text-primary-foreground" />
                 </div>
-                <span className="font-display text-sm font-bold text-foreground">RentWise</span>
+                <span className="font-display text-sm font-bold text-foreground">RentEase</span>
               </Link>
             </div>
             <NotificationBell />

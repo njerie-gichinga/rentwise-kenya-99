@@ -29,9 +29,9 @@ serve(async (req) => {
 
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #1a1a1a;">Welcome to RentWise!</h2>
+        <h2 style="color: #1a1a1a;">Welcome to RentEase!</h2>
         <p>Hi <strong>${tenant_name}</strong>,</p>
-        <p>Your landlord has invited you to manage your rental on RentWise. You've been assigned to:</p>
+        <p>Your landlord has invited you to manage your rental on RentEase. You've been assigned to:</p>
         <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 16px 0;">
           <p style="margin: 0;"><strong>${property_name}</strong> — Unit ${unit_number}</p>
         </div>
@@ -52,9 +52,9 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "RentWise <onboarding@resend.dev>",
+        from: "RentEase <onboarding@resend.dev>",
         to: [tenant_email],
-        subject: `${tenant_name}, you've been invited to RentWise`,
+        subject: `${tenant_name}, you've been invited to RentEase`,
         html: emailHtml,
       }),
     });

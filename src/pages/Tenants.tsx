@@ -253,7 +253,7 @@ const Tenants = () => {
               <DialogHeader>
                 <DialogTitle className="font-display">Invite a Tenant</DialogTitle>
                 <DialogDescription>
-                  Send an invitation to set up their RentWise account and link them to a unit.
+                  Send an invitation to set up their RentEase account and link them to a unit.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleInvite} className="space-y-4 pt-2">

@@ -65,7 +65,7 @@ serve(async (req) => {
           </p>
           ${tenant_name ? `<p style="margin: 8px 0 0; font-size: 13px; color: #666;">Submitted by: ${tenant_name}</p>` : ""}
         </div>
-        <p style="color: #666; font-size: 13px;">Log in to RentWise to manage this request.</p>
+        <p style="color: #666; font-size: 13px;">Log in to RentEase to manage this request.</p>
       </div>
     `;
 
@@ -76,7 +76,7 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "RentWise <onboarding@resend.dev>",
+        from: "RentEase <onboarding@resend.dev>",
         to: [landlord.email],
         subject: `🔧 New repair request: ${title}`,
         html: emailHtml,

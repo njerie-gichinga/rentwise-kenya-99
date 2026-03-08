@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
         PartyB: SHORTCODE,
         PhoneNumber: formattedPhone,
         CallBackURL: callbackUrl,
-        AccountReference: "RentWise",
+        AccountReference: "RentEase",
         TransactionDesc: "Rent Payment",
       }),
     });
