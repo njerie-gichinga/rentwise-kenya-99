@@ -18,13 +18,30 @@ async function getAccessToken(): Promise<string> {
   const credentials = btoa(`${consumerKey}:${consumerSecret}`);
 
   const res = await fetch(OAUTH_URL, {
+    method: "GET",
     headers: { Authorization: `Basic ${credentials}` },
   });
+
+  const responseText = await res.text();
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OAuth failed: ${text}`);
+    console.error(`OAuth failed: ${res.status} - ${responseText}`);
+    throw new Error(`OAuth failed with status ${res.status}: ${responseText}`);
   }
-  const data = await res.json();
+
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    console.error(`OAuth response is not JSON: ${responseText}`);
+    throw new Error(`OAuth returned non-JSON response: ${responseText.substring(0, 200)}`);
+  }
+
+  if (!data.access_token) {
+    console.error("OAuth response missing access_token:", responseText);
+    throw new Error("Access token not found in OAuth response");
+  }
+
   return data.access_token;
 }
 
@@ -87,8 +104,8 @@ Deno.serve(async (req) => {
     const password = btoa(`${SHORTCODE}${PASSKEY}${timestamp}`);
 
     // Get callback URL
-    const projectId = Deno.env.get("SUPABASE_URL")!.replace("https://", "").split(".")[0];
-    const callbackUrl = `https://${projectId}.supabase.co/functions/v1/mpesa-callback`;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const callbackUrl = `${supabaseUrl}/functions/v1/mpesa-callback`;
 
     // Get access token
     const accessToken = await getAccessToken();
@@ -115,10 +132,19 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const stkData = await stkRes.json();
+    const stkText = await stkRes.text();
+    console.log("STK Push response:", stkText);
+
+    let stkData;
+    try {
+      stkData = JSON.parse(stkText);
+    } catch {
+      console.error("STK response is not JSON:", stkText);
+      throw new Error(`STK Push returned non-JSON response: ${stkText.substring(0, 200)}`);
+    }
 
     if (stkData.ResponseCode !== "0") {
-      return new Response(JSON.stringify({ error: stkData.ResponseDescription || "STK Push failed" }), {
+      return new Response(JSON.stringify({ error: stkData.ResponseDescription || stkData.errorMessage || "STK Push failed" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
