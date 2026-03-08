@@ -2,6 +2,7 @@ import {
   Building2,
   LayoutDashboard,
   Home,
+  DoorOpen,
   Users,
   CreditCard,
   Wrench,
