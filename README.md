@@ -1,73 +1,125 @@
-# Welcome to your Lovable project
+# 🏠 RentEase Kenya
 
-## Project info
+A professional, mobile-first rental management platform built for small landlords and tenants in Kenya.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+### 🏢 Landlord Dashboard
+- **Property Management** — Add and manage multiple rental properties
+- **Unit Management** — Centralized view of all units with occupancy stats, rent tracking, and filtering
+- **Tenant Management** — Invite tenants via email, track assignments, and manage profiles
+- **Payment Tracking** — Record cash payments and track M-Pesa transactions with STK push integration
+- **Maintenance Requests** — Receive and manage repair requests from tenants with image uploads
+- **Announcements** — Broadcast messages to tenants
+- **Notifications** — In-app notification bell with real-time updates
+- **Rent Reminders** — Automated reminders via in-app notifications and SMS (Africa's Talking)
 
-There are several ways of editing your application.
+### 👤 Tenant Portal
+- **Dashboard** — View assigned unit, rent status, and payment history
+- **M-Pesa Payments** — Pay rent directly via M-Pesa STK push
+- **Maintenance Requests** — Submit repair requests with photos
+- **Notifications** — Receive rent reminders and announcements
 
-**Use Lovable**
+### 📱 Progressive Web App (PWA)
+- Installable on mobile devices (Android & iOS)
+- Offline-capable with runtime caching
+- Native app-like experience with standalone display
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 🔐 Authentication & Roles
+- Email-based signup/login with role selection (Landlord or Tenant)
+- Tenant invitation flow with email onboarding
+- Role-based access control with RLS policies
+- Dual-role support with role switching
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + TypeScript + Vite |
+| Styling | Tailwind CSS + shadcn/ui |
+| State | TanStack React Query |
+| Routing | React Router v6 |
+| Backend | Lovable Cloud (Supabase) |
+| Payments | M-Pesa Daraja API (STK Push) |
+| Email | Resend |
+| SMS | Africa's Talking |
+| PWA | vite-plugin-pwa + Workbox |
+| Animations | Framer Motion |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Project Structure
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```
+src/
+├── components/       # Reusable UI components
+│   ├── ui/           # shadcn/ui primitives
+│   └── ...           # App-specific components
+├── contexts/         # Auth context with role management
+├── hooks/            # Custom React hooks
+├── integrations/     # Supabase client & types (auto-generated)
+├── pages/            # Route pages
+│   ├── Dashboard.tsx       # Landlord dashboard
+│   ├── Properties.tsx      # Property CRUD
+│   ├── Units.tsx           # Unit management
+│   ├── Tenants.tsx         # Tenant invitations
+│   ├── Payments.tsx        # Payment records
+│   ├── Maintenance.tsx     # Maintenance requests
+│   ├── TenantPortal.tsx    # Tenant-facing portal
+│   └── ...
+└── lib/              # Utilities
 
-Follow these steps:
+supabase/
+└── functions/        # Edge functions
+    ├── mpesa-stk-push/      # M-Pesa STK push initiation
+    ├── mpesa-callback/      # M-Pesa payment callback
+    ├── send-invitation/     # Tenant email invitations
+    ├── send-notification/   # Push notifications
+    ├── notify-maintenance/  # Maintenance email alerts
+    └── rent-reminder/       # Automated rent reminders
+```
+
+## Getting Started
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to project directory
+cd rentease-kenya
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The following secrets are configured in the backend:
 
-**Use GitHub Codespaces**
+| Variable | Purpose |
+|----------|---------|
+| `RESEND_API_KEY` | Email delivery via Resend |
+| `MPESA_CONSUMER_KEY` | M-Pesa Daraja API authentication |
+| `MPESA_CONSUMER_SECRET` | M-Pesa Daraja API authentication |
+| `AT_API_KEY` | Africa's Talking SMS |
+| `AT_USERNAME` | Africa's Talking account |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Database Schema
 
-## What technologies are used for this project?
+- **properties** — Rental properties owned by landlords
+- **units** — Individual rental units within properties
+- **profiles** — User profile information (name, phone, avatar)
+- **user_roles** — Role assignments (landlord/tenant)
+- **payments** — Payment records with M-Pesa transaction tracking
+- **tenant_invitations** — Email-based tenant onboarding
+- **maintenance_requests** — Repair requests with image support
+- **notifications** — In-app notification system
 
-This project is built with:
+## Deployment
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Built with [Lovable](https://lovable.dev). Deploy via Lovable's publish feature or connect a custom domain.
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Private project. All rights reserved.
