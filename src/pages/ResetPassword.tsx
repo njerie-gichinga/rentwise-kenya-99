@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Building2, Eye, EyeOff } from "lucide-react";
+import PasswordStrength from "@/components/PasswordStrength";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,6 +84,7 @@ const ResetPassword = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  <PasswordStrength password={password} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="confirm">Confirm password</Label>
