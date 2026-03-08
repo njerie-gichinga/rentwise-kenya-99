@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import NotificationBell from "@/components/NotificationBell";
+import InstallBanner from "@/components/InstallBanner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
