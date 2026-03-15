@@ -205,6 +205,12 @@ const TenantPortal = () => {
           </Link>
           <div className="flex items-center gap-2">
             <NotificationBell />
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/help">
+                <HelpCircle className="mr-1.5 h-3.5 w-3.5" />
+                Help
+              </Link>
+            </Button>
             {roles.includes("landlord") && (
               <Button variant="outline" size="sm" onClick={() => { switchRole("landlord"); navigate("/dashboard", { replace: true }); }}>
                 <ArrowLeftRight className="mr-1.5 h-3.5 w-3.5" />
