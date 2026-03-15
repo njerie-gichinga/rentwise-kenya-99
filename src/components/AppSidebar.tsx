@@ -88,6 +88,7 @@ export function AppSidebar() {
           <LogOut className="h-4 w-4" />
           <span>Sign out</span>
         </button>
+        <DeleteAccountDialog />
       </SidebarFooter>
     </Sidebar>
   );
