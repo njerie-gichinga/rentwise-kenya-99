@@ -1,14 +1,40 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatsCard from "@/components/StatsCard";
-import { Building2, Users, CreditCard, AlertTriangle, Plus, UserPlus } from "lucide-react";
+import { Building2, Users, CreditCard, AlertTriangle, Plus, UserPlus, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [testingReminder, setTestingReminder] = useState(false);
+
+  const handleTestReminder = async () => {
+    setTestingReminder(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("rent-reminder", {
+        body: {},
+      });
+      if (error) throw error;
+      toast({
+        title: "Reminder triggered",
+        description: data?.notifications_sent
+          ? `Sent ${data.notifications_sent} notification(s). SMS: ${data.sms ? JSON.stringify(data.sms) : "not configured"}`
+          : data?.message || "No reminders needed today.",
+      });
+      console.log("Rent reminder response:", data);
+    } catch (e: any) {
+      console.error("Test reminder error:", e);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setTestingReminder(false);
+    }
+  };
 
   // Fetch properties
   const { data: properties = [] } = useQuery({
@@ -106,6 +132,15 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground">Welcome back. Here's your rental overview.</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleTestReminder}
+              disabled={testingReminder}
+            >
+              <Bell className="mr-1.5 h-3.5 w-3.5" />
+              {testingReminder ? "Sending…" : "Test Reminders"}
+            </Button>
             <Button size="sm" variant="outline" asChild>
               <Link to="/properties">
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
