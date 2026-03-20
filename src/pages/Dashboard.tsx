@@ -11,6 +11,30 @@ import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [testingReminder, setTestingReminder] = useState(false);
+
+  const handleTestReminder = async () => {
+    setTestingReminder(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("rent-reminder", {
+        body: {},
+      });
+      if (error) throw error;
+      toast({
+        title: "Reminder triggered",
+        description: data?.notifications_sent
+          ? `Sent ${data.notifications_sent} notification(s). SMS: ${data.sms ? JSON.stringify(data.sms) : "not configured"}`
+          : data?.message || "No reminders needed today.",
+      });
+      console.log("Rent reminder response:", data);
+    } catch (e: any) {
+      console.error("Test reminder error:", e);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setTestingReminder(false);
+    }
+  };
 
   // Fetch properties
   const { data: properties = [] } = useQuery({
