@@ -73,7 +73,12 @@ Deno.serve(async (req) => {
             message: `${title}\n${message}`,
           });
 
-          const smsRes = await fetch("https://api.africastalking.com/version1/messaging", {
+          const atSandbox = atUsername === "sandbox";
+          const atBaseUrl = atSandbox
+            ? "https://api.sandbox.africastalking.com/version1/messaging"
+            : "https://api.africastalking.com/version1/messaging";
+          console.log(`Using AT ${atSandbox ? "sandbox" : "production"} API`);
+          const smsRes = await fetch(atBaseUrl, {
             method: "POST",
             headers: {
               apiKey: atApiKey,

@@ -140,7 +140,11 @@ Deno.serve(async (req) => {
             message: `${notifications[i].title}\n${notifications[i].message}`,
           });
 
-          await fetch("https://api.africastalking.com/version1/messaging", {
+          const atSandbox = atUsername === "sandbox";
+          const atBaseUrl = atSandbox
+            ? "https://api.sandbox.africastalking.com/version1/messaging"
+            : "https://api.africastalking.com/version1/messaging";
+          await fetch(atBaseUrl, {
             method: "POST",
             headers: {
               apiKey: atApiKey,
