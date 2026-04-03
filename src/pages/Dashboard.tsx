@@ -2,6 +2,7 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatsCard from "@/components/StatsCard";
 import { Building2, Users, CreditCard, AlertTriangle, Plus, UserPlus, Bell } from "lucide-react";
+import MonthlyReportButton from "@/components/MonthlyReportButton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -132,6 +133,7 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground">Welcome back. Here's your rental overview.</p>
           </div>
           <div className="flex gap-2">
+            <MonthlyReportButton />
             <Button
               size="sm"
               variant="outline"
