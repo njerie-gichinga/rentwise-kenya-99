@@ -133,7 +133,7 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground">Welcome back. Here's your rental overview.</p>
           </div>
           <div className="flex gap-2">
-            <Button
+            <MonthlyReportButton />
               size="sm"
               variant="outline"
               onClick={handleTestReminder}
